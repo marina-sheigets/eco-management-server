@@ -3,12 +3,12 @@ import { NextFunction, Request, Response } from 'express';
 import Department from '../models/Department';
 import Costs from '../models/Costs';
 import Enterprise from '../models/Enterprise';
+import Volumes from '../models/Volumes';
 
 class CostsController {
 	async createCosts(req: Request, res: Response, next: NextFunction) {
 		try {
-			const costs: Cost[] = req.body.costs;
-			const { department, enterprise, type } = req.body;
+			const { department, enterprise, type, resource, costs, year } = req.body;
 
 			const foundedDepartment = await Department.findOne({ name: department });
 			if (!foundedDepartment) {
@@ -19,19 +19,48 @@ class CostsController {
 				return res.status(403).json({ message: 'Such enterprise does not exist' });
 			}
 
-			costs.forEach(async (elem) => {
-				await Costs.updateOne(
-					{ year: elem.year, department: foundedDepartment._id, type },
-					{
-						costs: elem.value ?? '0',
-						department: foundedDepartment._id,
-						year: elem.year,
-						enterprise: foundedEnterprise._id,
-						type,
-					},
-					{ upsert: true }
-				);
-			});
+			if (type === 'Costs') {
+				costs.forEach(async (elem: { id: number; month: string; value: string }) => {
+					await Costs.updateOne(
+						{
+							year: year,
+							month: elem.month,
+							department: foundedDepartment._id,
+							resource,
+						},
+						{
+							costs: elem.value ?? '0',
+							department: foundedDepartment._id,
+							year: year,
+							month: elem.month,
+							enterprise: foundedEnterprise._id,
+							resource,
+						},
+						{ upsert: true }
+					);
+				});
+			} else {
+				costs.forEach(async (elem: { id: number; month: string; value: string }) => {
+					await Volumes.updateOne(
+						{
+							year: year,
+							month: elem.month,
+							department: foundedDepartment._id,
+							resource,
+						},
+						{
+							volumes: elem.value ?? '0',
+							department: foundedDepartment._id,
+							year: year,
+							month: elem.month,
+							enterprise: foundedEnterprise._id,
+							resource,
+						},
+						{ upsert: true }
+					);
+				});
+			}
+
 			res.status(200).json({ message: 'Success !' });
 		} catch (e) {}
 	}
