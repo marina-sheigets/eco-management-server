@@ -1,4 +1,4 @@
-import { MONTHS, YEARS } from './../constants/index';
+import { MONTHS, RESOURCES, YEARS } from './../constants/index';
 import { NextFunction, Request, Response } from 'express';
 import Department from '../models/Department';
 import Enterprise from '../models/Enterprise';
@@ -23,8 +23,6 @@ type Cost = {
 type Volume = {
 	year: number;
 	month: string;
-	enterprise: string;
-	department: string;
 	volumes: number;
 	resource: string;
 };
@@ -53,7 +51,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += response.costs ?? 0;
+						value.values[response.month] += Number(response.costs) ?? 0;
 					}
 				});
 			});
@@ -63,7 +61,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += response.volumes ?? 0;
+						value.values[response.month] += Number(response.volumes) ?? 0;
 					}
 				});
 			});
@@ -107,7 +105,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += response.costs ?? 0;
+						value.values[response.month] += +response.costs ?? 0;
 					}
 				});
 			});
@@ -121,7 +119,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += response.volumes ?? 0;
+						value.values[response.month] += +response.volumes ?? 0;
 					}
 				});
 			});
@@ -130,6 +128,62 @@ class StatisticsController {
 		return res.json({ statistics });
 	}
 
+	async getDepartmentInfoForYear(req: Request, res: Response, next: NextFunction) {
+		let { enterprise: enterpriseId, year, department: departmentId } = req.params;
+
+		const foundedEnterprise = await Enterprise.findById(enterpriseId);
+		if (!foundedEnterprise) {
+			return res.status(403).json({ message: 'Such enterprise does not exist' });
+		}
+
+		const foundedDepartment = await Department.findById(departmentId);
+		if (!foundedDepartment) {
+			return res.status(403).json({ message: 'Such department does not exist' });
+		}
+
+		let statistics: {
+			[fuel: string]: {
+				volumes?: { [month: string]: number };
+				costs?: { [month: string]: number };
+			};
+		} = {};
+		let results: any = await Costs.find({
+			enterprise: foundedEnterprise._id,
+			department: foundedDepartment._id,
+			year,
+		});
+
+		RESOURCES.map((resource: string) => {
+			statistics[resource] = { costs: {}, volumes: {} };
+		});
+		RESOURCES.map((resource: string) => {
+			MONTHS.map((month: string) => {
+				statistics[resource] = {
+					costs: { ...statistics[resource]['costs'], [month]: 0 },
+					volumes: { ...statistics[resource]['volumes'], [month]: 0 },
+				};
+			});
+		});
+		const volumes = await Volumes.find({
+			enterprise: foundedEnterprise._id,
+			department: foundedDepartment._id,
+			year,
+		});
+		results.map((item: Cost) => {
+			statistics[item.resource]['costs'] = {
+				...statistics[item.resource]['costs'],
+				[item.month]: item.costs ?? 0,
+			};
+		});
+
+		volumes.map((item: Volume) => {
+			statistics[item.resource]['volumes'] = {
+				...statistics[item.resource]['volumes'],
+				[item.month]: item.volumes ?? 0,
+			};
+		});
+		return res.json({ statistics });
+	}
 	async getMonthlyConsumptionInfo(req: Request, res: Response, next: NextFunction) {
 		const { department, month, resource } = req.params;
 

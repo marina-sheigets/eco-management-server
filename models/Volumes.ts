@@ -6,7 +6,7 @@ const Volumes = new Schema({
 	department: { type: Schema.Types.ObjectId, ref: 'Department', required: true },
 	enterprise: { type: Schema.Types.ObjectId, ref: 'Enterprise', required: true },
 	resource: { type: String, required: true },
-	volumes: { type: String, required: true, default: 0 },
+	volumes: { type: Number, required: true, default: 0 },
 });
 
 export default model('Volumes', Volumes);

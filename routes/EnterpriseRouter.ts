@@ -24,6 +24,10 @@ router.get(
 	StatisticsController.getDepartmentInfo
 );
 router.get(
+	'/get/department/statistics/:enterprise/:department/:year',
+	StatisticsController.getDepartmentInfoForYear
+);
+router.get(
 	'/get/consumption/statistics/:department/:resource/:month',
 	StatisticsController.getMonthlyConsumptionInfo
 );

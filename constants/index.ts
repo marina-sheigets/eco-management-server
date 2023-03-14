@@ -18,3 +18,5 @@ export const MONTHS = [
 	'November',
 	'December',
 ];
+
+export const RESOURCES = ['Electricity', 'Water', 'Gas', 'Diesel fuel', 'Gasoline'];
