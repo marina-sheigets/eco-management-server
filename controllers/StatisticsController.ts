@@ -51,7 +51,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.costs) ?? 0;
+						value.values[response.month] += Number(response.costs).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -61,7 +61,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.volumes) ?? 0;
+						value.values[response.month] += Number(response.volumes).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -105,7 +105,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += +response.costs ?? 0;
+						value.values[response.month] += Number(response.costs).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -119,7 +119,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += +response.volumes ?? 0;
+						value.values[response.month] += Number(response.volumes).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -219,6 +219,70 @@ class StatisticsController {
 		});
 
 		return res.json({ statistics });
+	}
+
+	getCurrentDepartmentData = (department: any, month: string, resource: string) => {
+		return Costs.find({
+			department: department._id,
+			month,
+			resource,
+			days: { $gt: 0 },
+		});
+	};
+	async getAnnualConsumptionInfo(req: Request, res: Response, next: NextFunction) {
+		const { enterprise, month, resource } = req.params;
+
+		const foundedEnterprise = await Enterprise.findById(enterprise);
+		if (!foundedEnterprise) {
+			return res.status(403).json({ message: 'Such enterprise does not exist' });
+		}
+
+		const departments = await Department.find({ enterprise: foundedEnterprise._id });
+		console.log(departments);
+		if (!departments.length) {
+			res.json({ statistics: {} });
+		}
+
+		const departmentsData: { [department: string]: any } = {};
+		departments.forEach(async (department) => {
+			const currentDepartmentData = this.getCurrentDepartmentData(
+				department,
+				month,
+				resource
+			);
+			// await Costs.find({
+			// 	department: department._id,
+			// 	month,
+			// 	resource,
+			// 	days: { $gt: 0 },
+			// });
+			console.log(currentDepartmentData);
+			//departmentsData[department.name] = '1';
+			departmentsData[department.name] = currentDepartmentData;
+		});
+		return res.json({ departmentsData });
+		//departments.map((department) => {});
+		// let results = await Costs.find({
+		// 	month,
+		// 	enterprise: foundedEnterprise._id,
+		// 	resource,
+		// }).sort('year');
+
+		// results = results.filter((item: any) => item.days);
+
+		// let statistics: {
+		// 	month: string;
+		// 	values: { year: number; days: number; costs: number; average: number }[];
+		// } = {
+		// 	month: '',
+		// 	values: [],
+		// };
+
+		// if (!results.length) {
+		// 	return res.json({ statistics: {} });
+		// }
+
+		// return res.json({ results });
 	}
 }
 

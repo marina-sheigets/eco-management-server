@@ -32,4 +32,9 @@ router.get(
 	StatisticsController.getMonthlyConsumptionInfo
 );
 
+router.get(
+	'/get/consumption/full/statistics/:enterprise/:resource/:month',
+	StatisticsController.getAnnualConsumptionInfo
+);
+
 export default router;
