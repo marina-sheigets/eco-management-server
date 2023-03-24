@@ -51,7 +51,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.costs).toFixed(2) ?? 0;
+						value.values[response.month] += +Number(response.costs).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -61,7 +61,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.volumes).toFixed(2) ?? 0;
+						value.values[response.month] += +Number(response.volumes).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -105,7 +105,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.costs).toFixed(2) ?? 0;
+						value.values[response.month] += +Number(response.costs).toFixed(2) ?? 0;
 					}
 				});
 			});
@@ -119,7 +119,7 @@ class StatisticsController {
 			results.forEach((response: any) => {
 				statistics.forEach((value: Result) => {
 					if (response.year == value.year) {
-						value.values[response.month] += Number(response.volumes).toFixed(2) ?? 0;
+						value.values[response.month] += +Number(response.volumes).toFixed(2) ?? 0;
 					}
 				});
 			});
