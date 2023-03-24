@@ -4,7 +4,8 @@ import Department from '../models/Department';
 import Enterprise from '../models/Enterprise';
 import Costs from '../models/Costs';
 import Volumes from '../models/Volumes';
-
+import { Document, ObjectId, Types } from 'mongoose';
+import _ from 'lodash';
 type Result = {
 	year: number;
 	values: { [month: string]: number };
@@ -237,52 +238,53 @@ class StatisticsController {
 			return res.status(403).json({ message: 'Such enterprise does not exist' });
 		}
 
-		const departments = await Department.find({ enterprise: foundedEnterprise._id });
-		console.log(departments);
-		if (!departments.length) {
-			res.json({ statistics: {} });
-		}
+		const filteredDocs = await Costs.find({
+			enterprise: foundedEnterprise._id,
+			month: month,
+			resource: resource,
+			days: { $gt: 0 },
+		}).lean();
 
-		const departmentsData: { [department: string]: any } = {};
-		departments.forEach(async (department) => {
-			const currentDepartmentData = this.getCurrentDepartmentData(
-				department,
-				month,
-				resource
-			);
-			// await Costs.find({
-			// 	department: department._id,
-			// 	month,
-			// 	resource,
-			// 	days: { $gt: 0 },
-			// });
-			console.log(currentDepartmentData);
-			//departmentsData[department.name] = '1';
-			departmentsData[department.name] = currentDepartmentData;
-		});
-		return res.json({ departmentsData });
-		//departments.map((department) => {});
-		// let results = await Costs.find({
-		// 	month,
-		// 	enterprise: foundedEnterprise._id,
-		// 	resource,
-		// }).sort('year');
+		const yearGroups = _.groupBy(filteredDocs, 'year');
 
-		// results = results.filter((item: any) => item.days);
+		const resultArray = Object.keys(yearGroups)
+			.map((year) => {
+				const departments = yearGroups[year];
+				const totalDepartments = departments.filter((doc: any) => doc.days).length;
+				const totalCosts = departments.reduce(
+					(acc: number, doc: any) => acc + doc.costs,
+					0
+				);
+				const totalDays = departments.reduce((acc: number, doc: any) => acc + doc.days, 0);
+				const avgCostsPerDay =
+					totalDays !== 0
+						? ((totalCosts / totalDays) * departments.length) / totalDepartments
+						: null;
 
-		// let statistics: {
-		// 	month: string;
-		// 	values: { year: number; days: number; costs: number; average: number }[];
-		// } = {
-		// 	month: '',
-		// 	values: [],
-		// };
+				const obj = {
+					year: parseInt(year),
+					days: totalDays,
+					costs: totalCosts,
+					average: avgCostsPerDay,
+				};
 
-		// if (!results.length) {
-		// 	return res.json({ statistics: {} });
-		// }
+				return {
+					month: month,
+					values: [obj],
+				};
+			})
+			.reduce((acc: any, curr: any) => {
+				const index = acc.findIndex((obj: any) => obj.month === curr.month);
 
-		// return res.json({ results });
+				if (index !== -1) {
+					acc[index].values.push(curr.values[0]);
+				} else {
+					acc.push(curr);
+				}
+
+				return acc;
+			}, []);
+		res.status(200).json({ statistics: resultArray });
 	}
 }
 
